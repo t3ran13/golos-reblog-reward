@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Repost Reward</title>
+</head>
+<body>
+<style type='text/css'>
+    body {
+        font-family: MicrosoftSansSerif;
+    }
+    #form .form-data {
+        width: 300px;
+    }
+    #form .hidden
+    {
+        display: none;
+    }
+    #form .show-table-row
+    {
+        display: table-row;
+    }
+    #form .title {
+        text-align: right;
+    }
+    #form .error {
+        border: 2px solid red;
+    }
+    #table-with-settings,
+    #table-with-users
+    {
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+<div id="page">
+    <div id="form">
+        <table id="table-with-settings">
+            <tr>
+                <td class="title">Ник плательшика</td>
+                <td>
+                    <input type="text" class="form-data" id="payer-user">
+                </td>
+            </tr>
+            <tr>
+                <td class="title">Активный ключ плательшика</td>
+                <td>
+                    <input type="text" class="form-data" id="payer-active-key">
+                </td>
+            </tr>
+            <tr>
+                <td class="title">Награда</td>
+                <td>
+                    <input type="text" class="form-data" id="payer-reward" placeholder="1 GOLOS/5 GBG">
+                </td>
+            </tr>
+            <tr>
+                <td class="title">Сообщение к переводу</td>
+                <td>
+                    <input type="text" class="form-data" id="payer-memo" value="За репост {post_link}">
+                </td>
+            </tr>
+            <tr>
+                <td class="title">Ссылка на статью</td>
+                <td>
+                    <input type="text" class="form-data" id="post-url">
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <input type="submit" class="submit-data" value="Показать поделившихся пользователей" onclick="Page.showListRepostedUsers();">
+                </td>
+            </tr>
+            <tr id="pay-row" class="hidden">
+                <td></td>
+                <td>
+                    <input type="submit" class="submit-data" value="Повелеваю вознаградить всех!" onclick="Page.rewardUsers();">
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="users-list">
+    </div>
+</div>
+
+<script src="golos.min.js"></script>
+<script>
+
+    function Page() {
+    }
+
+    var Page = new Page();
+
+    Page.rewardUsers = function() {
+        console.log('rewardUsers');
+
+        if (
+            Page.getPayer() === ''
+            || document.getElementById('payer-active-key').value === ''
+            || document.getElementById('payer-reward').value === ''
+        ) {
+            alert('Заполните все поля');
+            return;
+        }
+
+        var list = document.getElementsByClassName("rewarded-user");
+        Array.from(list).forEach(function(td) {
+            Page.rewardUser(td.id);
+        });
+    }
+
+    Page.getPayer = function() {
+        return document.getElementById('payer-user').value;
+    }
+
+    Page.rewardUser = function(user) {
+        console.log('rewardUser');
+        var from = Page.getPayer();
+        var wif = document.getElementById('payer-active-key').value;
+        var amt = document.getElementById('payer-reward').value;
+        if (amt.indexOf('GOLOS')) {
+            amt = Number(amt.replace('GOLOS', '').trim()).toFixed(3) + ' GOLOS';
+        } else {
+            if (amt.indexOf('GBG')) {
+                amt = Number(amt.replace('GBG', '').trim()).toFixed(3) + ' GBG';
+            }
+        }
+        var memo = document.getElementById('payer-memo').value;
+        memo = memo.replace('{post_link}', document.getElementById('post-url').value);
+        var to = user;
+
+        console.log('from', from);
+        console.log('to', to);
+        console.log('amt', amt);
+        console.log('memo', memo);
+        console.log('memo', memo);
+
+        var td = document.getElementById('user-status-' + to);
+        td.innerHTML = '~';
+
+        golos.broadcast.transfer(wif, from, to, amt, memo, function (sendError, sendResult)
+        {
+            console.log(sendError, sendResult);
+
+            if (sendError != null)
+            {
+                td.innerHTML = 'ERROR';
+            }
+            else {
+                td.innerHTML = 'sent ' + amt;
+            }
+        });
+
+    }
+
+    Page.showListRepostedUsers = function() {
+        console.log('showListRepostedUsers');
+
+        Page.hidePayButton();
+
+        Page.validateFromLink();
+        Page.validateNotEmpty('payer-active-key');
+        Page.validateNotEmpty('payer-user');
+        Page.validateNotEmpty('payer-reward');
+
+        var urlInfo = Page.getInfoFromLink();
+        if (typeof urlInfo.golos_user === 'undefined') {
+            var p1 = new Promise(
+                function(resolve, reject) {
+                    resolve(Page.getRebloggedtUsers(urlInfo));
+                });
+            p1.then(Page.showUsersList)
+                .then(Page.showPayButton);
+        }
+
+    }
+
+    Page.hidePayButton = function() {
+        console.log('hidePayButton');
+
+        var tr = document.getElementById('pay-row');
+        tr.classList.add('hidden');
+        tr.classList.remove('show-table-row');
+    }
+
+    Page.showPayButton = function() {
+        console.log('showPayButton');
+
+        var tr = document.getElementById('pay-row');
+        tr.classList.remove('hidden');
+        tr.classList.add('show-table-row');
+    }
+
+    Page.getInfoFromLink = function() {
+        console.log('getInfoFromLink');
+
+        //hack
+        var a = document.createElement('a');
+        var url = document.getElementById('post-url').value;
+        a.href = url;
+
+        var data = {};
+        if (url.length > 0) {
+            data.path = a.pathname;
+            var parts = data.path.substring(data.path.indexOf('/@') + 2).split('/');
+            data.author = parts[0];
+            data.permlink = parts[1];
+        }
+
+        console.log('data', data);
+
+        return data;
+    }
+
+    Page.validateFromLink = function() {
+        console.log('validateFromLink');
+        var urlInfo = Page.getInfoFromLink();
+        if (typeof urlInfo.author === 'undefined') {
+            document.getElementById('post-url').classList.add("error");
+        } else {
+            document.getElementById('post-url').classList.remove("error");
+        }
+    }
+
+    Page.validateNotEmpty = function(id) {
+        console.log('validateNotEmpty');
+        if (document.getElementById(id).value === '') {
+            document.getElementById(id).classList.add("error");
+        } else {
+            document.getElementById(id).classList.remove("error");
+        }
+    }
+
+    Page.getRebloggedtUsers = function (query) {
+        console.log('getRebloggedtUsers');
+        console.log(query);
+        return golos.api.getRebloggedBy(query.author, query.permlink, function(err, result) {
+            console.log(err, result);
+            if (err) {
+                alert('error');
+                return [];
+            }
+
+            var index = result.indexOf(Page.getPayer());
+            if (index > -1) {
+                result.splice(index, 1);
+            }
+
+            return result;
+        });
+    }
+
+    Page.showUsersList = function(list) {
+        console.log('showUsersList', list);
+
+        var html = '<table id="table-with-users">';
+        html += '<tr>';
+        html += '<td>';
+        html += 'Всего: ' + list.length;
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '</tr>';
+        list.forEach(function(user) {
+            html += '<tr>';
+            html += '<td class="rewarded-user" id="' + user + '">';
+            html += user;
+            html += '</td>';
+            html += '<td id="user-status-' + user + '">';
+            html += '0';
+            html += '</td>';
+            html += '<td>';
+            html += '<input type="submit" class="submit-data" value="Вознаградить" onclick="Page.rewardUser(\'' + user + '\');">';
+            html += '</td>';
+            html += '</tr>';
+        });
+        html += '</table>';
+
+        document.getElementById('users-list').innerHTML = html;
+    }
+</script>
+</body>
+</html>
