@@ -9,6 +9,9 @@
     body {
         font-family: MicrosoftSansSerif;
     }
+    #form #payer-amount {
+        width: 182px;
+    }
     #form .form-data {
         width: 300px;
     }
@@ -32,6 +35,13 @@
         margin-left: auto;
         margin-right: auto;
     }
+    .checkbox-set-all
+    {
+        color: #4078c0;
+        font-weight: 500;
+        font-size: 13px;
+        cursor: pointer;
+    }
 </style>
 <div id="page">
     <div id="form">
@@ -51,7 +61,12 @@
             <tr>
                 <td class="title">Награда</td>
                 <td>
-                    <input type="text" class="form-data" id="payer-reward" placeholder="1 GOLOS/5 GBG/0.1 GOLOSPOWER">
+                    <input type="text" class="form-data" id="payer-amount" placeholder="0.1">
+                    <select  id="payer-amount-kind">
+                        <option value="GOLOSPOWER" selected="selected">СИЛА ГОЛОСА</option>
+                        <option value="GOLOS">ГОЛОС</option>
+                        <option value="GBG">ЗОЛОТОЙ</option>
+                    </select>
                 </td>
             </tr>
             <tr>
@@ -70,12 +85,6 @@
                 <td></td>
                 <td>
                     <input type="submit" class="submit-data" value="Показать поделившихся пользователей" onclick="Page.showListRepostedUsers();">
-                </td>
-            </tr>
-            <tr id="pay-row" class="hidden">
-                <td></td>
-                <td>
-                    <input type="submit" class="submit-data" value="Повелеваю вознаградить всех!" onclick="Page.rewardUsers();">
                 </td>
             </tr>
         </table>
@@ -98,15 +107,17 @@
         if (
             Page.getPayer() === ''
             || document.getElementById('payer-active-key').value === ''
-            || document.getElementById('payer-reward').value === ''
+            || document.getElementById('payer-amount').value === ''
         ) {
             alert('Заполните все поля');
             return;
         }
 
         var list = document.getElementsByClassName("rewarded-user");
-        Array.from(list).forEach(function(td) {
-            Page.rewardUser(td.id);
+        Array.from(list).forEach(function(checkbox) {
+            if (checkbox.checked) {
+                Page.rewardUser(checkbox.id);
+            }
         });
     }
 
@@ -118,16 +129,17 @@
         console.log('rewardUser');
         var from = Page.getPayer();
         var wif = document.getElementById('payer-active-key').value;
-        var amt = document.getElementById('payer-reward').value;
+        var amt = document.getElementById('payer-amount').value;
+        amt = Number(amt.trim()).toFixed(3);
+        var kind = document.getElementById('payer-amount-kind').value;
         var to = user;
         var td = document.getElementById('user-status-' + to);
 
 
 
         console.log('amt.indexOf(\'GOLOSPOWER\')', amt.indexOf('GOLOSPOWER'));
-
-        if (amt.indexOf('GOLOSPOWER') > 0) {
-            amt = Number(amt.replace('GOLOSPOWER', '').trim()).toFixed(3) + ' GOLOS';
+        amt.trim()
+        if (kind === 'GOLOSPOWER') {
 
             console.log('from', from);
             console.log('to', to);
@@ -135,7 +147,7 @@
 
             td.innerHTML = '~';
 
-            golos.broadcast.transferToVesting(wif, from, to, amt, function (sendError, sendResult)
+            golos.broadcast.transferToVesting(wif, from, to, amt + ' GOLOS', function (sendError, sendResult)
             {
                 console.log(sendError, sendResult);
 
@@ -149,13 +161,6 @@
                 }
             });
         } else {
-            if (amt.indexOf('GOLOS') > 0) {
-                amt = Number(amt.replace('GOLOS', '').trim()).toFixed(3) + ' GOLOS';
-            } else {
-                if (amt.indexOf('GBG')) {
-                    amt = Number(amt.replace('GBG', '').trim()).toFixed(3) + ' GBG';
-                }
-            }
             var memo = document.getElementById('payer-memo').value;
             memo = memo.replace('{post_link}', document.getElementById('post-url').value);
 
@@ -165,7 +170,7 @@
             console.log('memo', memo);
             td.innerHTML = '~';
 
-            golos.broadcast.transfer(wif, from, to, amt, memo, function (sendError, sendResult)
+            golos.broadcast.transfer(wif, from, to, amt + ' ' + kind, memo, function (sendError, sendResult)
             {
                 console.log(sendError, sendResult);
 
@@ -184,12 +189,11 @@
     Page.showListRepostedUsers = function() {
         console.log('showListRepostedUsers');
 
-        Page.hidePayButton();
 
         Page.validateFromLink();
         Page.validateNotEmpty('payer-active-key');
         Page.validateNotEmpty('payer-user');
-        Page.validateNotEmpty('payer-reward');
+        Page.validateNotEmpty('payer-amount');
 
         var urlInfo = Page.getInfoFromLink();
         if (typeof urlInfo.golos_user === 'undefined') {
@@ -197,26 +201,9 @@
                 function(resolve, reject) {
                     resolve(Page.getRebloggedtUsers(urlInfo));
                 });
-            p1.then(Page.showUsersList)
-                .then(Page.showPayButton);
+            p1.then(Page.showUsersList);
         }
 
-    }
-
-    Page.hidePayButton = function() {
-        console.log('hidePayButton');
-
-        var tr = document.getElementById('pay-row');
-        tr.classList.add('hidden');
-        tr.classList.remove('show-table-row');
-    }
-
-    Page.showPayButton = function() {
-        console.log('showPayButton');
-
-        var tr = document.getElementById('pay-row');
-        tr.classList.remove('hidden');
-        tr.classList.add('show-table-row');
     }
 
     Page.getInfoFromLink = function() {
@@ -284,16 +271,22 @@
         var html = '<table id="table-with-users">';
         html += '<tr>';
         html += '<td>';
+        html += '<span class="checkbox-set-all" onclick="Page.pressAll();">Все</span>'
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '<td>';
         html += 'Всего: ' + list.length;
-        html += '</td>';
-        html += '<td>';
-        html += '</td>';
-        html += '<td>';
         html += '</td>';
         html += '</tr>';
         list.forEach(function(user) {
             html += '<tr>';
-            html += '<td class="rewarded-user" id="' + user + '">';
+            html += '<td>';
+            html += '<input type="checkbox" checked="checked" class="rewarded-user" id="' + user + '">';
+            html += '</td>';
+            html += '<td>';
             html += user;
             html += '</td>';
             html += '<td id="user-status-' + user + '">';
@@ -304,9 +297,37 @@
             html += '</td>';
             html += '</tr>';
         });
+        html += '<tr>';
+        html += '<td colspan="4">';
+        html += '<input type="submit" class="submit-data" value="Повелеваю вознаградить выбранных!" onclick="Page.rewardUsers();">';
+        html += '</td>';
+        html += '</tr>';
         html += '</table>';
 
         document.getElementById('users-list').innerHTML = html;
+    }
+
+
+
+    Page.pressAll = function() {
+
+        var list = document.getElementsByClassName("rewarded-user");
+        var isAllSelected = false;
+        Array.from(list).forEach(function(checkbox) {
+            if (!checkbox.checked) {
+                checkbox.checked = true;
+                isAllSelected = true;
+            }
+        });
+
+        if (!isAllSelected) {
+            Array.from(list).forEach(function(checkbox) {
+                if (checkbox.checked) {
+                    checkbox.checked = false;
+                }
+            });
+        }
+        isAllSelected = false;
     }
 </script>
 </body>
