@@ -51,7 +51,7 @@
             <tr>
                 <td class="title">Награда</td>
                 <td>
-                    <input type="text" class="form-data" id="payer-reward" placeholder="1 GOLOS/5 GBG">
+                    <input type="text" class="form-data" id="payer-reward" placeholder="1 GOLOS/5 GBG/0.1 GOLOSPOWER">
                 </td>
             </tr>
             <tr>
@@ -119,39 +119,66 @@
         var from = Page.getPayer();
         var wif = document.getElementById('payer-active-key').value;
         var amt = document.getElementById('payer-reward').value;
-        if (amt.indexOf('GOLOS')) {
-            amt = Number(amt.replace('GOLOS', '').trim()).toFixed(3) + ' GOLOS';
-        } else {
-            if (amt.indexOf('GBG')) {
-                amt = Number(amt.replace('GBG', '').trim()).toFixed(3) + ' GBG';
-            }
-        }
-        var memo = document.getElementById('payer-memo').value;
-        memo = memo.replace('{post_link}', document.getElementById('post-url').value);
         var to = user;
-
-        console.log('from', from);
-        console.log('to', to);
-        console.log('amt', amt);
-        console.log('memo', memo);
-        console.log('memo', memo);
-
         var td = document.getElementById('user-status-' + to);
-        td.innerHTML = '~';
 
-        golos.broadcast.transfer(wif, from, to, amt, memo, function (sendError, sendResult)
-        {
-            console.log(sendError, sendResult);
 
-            if (sendError != null)
+
+        console.log('amt.indexOf(\'GOLOSPOWER\')', amt.indexOf('GOLOSPOWER'));
+
+        if (amt.indexOf('GOLOSPOWER') > 0) {
+            amt = Number(amt.replace('GOLOSPOWER', '').trim()).toFixed(3) + ' GOLOS';
+
+            console.log('from', from);
+            console.log('to', to);
+            console.log('amt', amt);
+
+            td.innerHTML = '~';
+
+            golos.broadcast.transferToVesting(wif, from, to, amt, function (sendError, sendResult)
             {
-                td.innerHTML = 'ERROR';
-            }
-            else {
-                td.innerHTML = 'sent ' + amt;
-            }
-        });
+                console.log(sendError, sendResult);
 
+                if (sendError != null)
+                {
+                    console.log('sendError', sendError);
+                    td.innerHTML = 'ERROR';
+                }
+                else {
+                    td.innerHTML = 'powered up ' + amt;
+                }
+            });
+        } else {
+            if (amt.indexOf('GOLOS') > 0) {
+                amt = Number(amt.replace('GOLOS', '').trim()).toFixed(3) + ' GOLOS';
+            } else {
+                if (amt.indexOf('GBG')) {
+                    amt = Number(amt.replace('GBG', '').trim()).toFixed(3) + ' GBG';
+                }
+            }
+            var memo = document.getElementById('payer-memo').value;
+            memo = memo.replace('{post_link}', document.getElementById('post-url').value);
+
+            console.log('from', from);
+            console.log('to', to);
+            console.log('amt', amt);
+            console.log('memo', memo);
+            td.innerHTML = '~';
+
+            golos.broadcast.transfer(wif, from, to, amt, memo, function (sendError, sendResult)
+            {
+                console.log(sendError, sendResult);
+
+                if (sendError != null)
+                {
+                    console.log('sendError', sendError);
+                    td.innerHTML = 'ERROR';
+                }
+                else {
+                    td.innerHTML = 'sent ' + amt;
+                }
+            });
+        }
     }
 
     Page.showListRepostedUsers = function() {
