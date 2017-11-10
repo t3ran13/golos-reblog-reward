@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Repost Reward</title>
+    <script src="golos.min.js"></script>
+    <script src="//cdn.steemjs.com/lib/latest/steem.min.js"></script>
 </head>
 <body>
 <style type='text/css'>
@@ -46,6 +48,13 @@
 <div id="page">
     <div id="form">
         <table id="table-with-settings">
+            <tr>
+                <td class="title">Платформа</td>
+                <td>
+                    <input type="radio" onclick="Page.changePlatform();" name="platform" checked="checked" value="golos"> Golos
+                    <input type="radio" onclick="Page.changePlatform();" name="platform" value="steem"> Steemit
+                </td>
+            </tr>
             <tr>
                 <td class="title">Ник плательщика@</td>
                 <td>
@@ -92,14 +101,30 @@
     <div id="users-list">
     </div>
 </div>
-
-<script src="golos.min.js"></script>
 <script>
 
     function Page() {
+        var api = golos;
     }
 
     var Page = new Page();
+
+    Page.setApi = function(platform) {
+        if (platform === 'golos') {
+            api = golos;
+        } else {
+            api = steem;
+        }
+    }
+
+    Page.getApi = function() {
+        return api;
+    }
+
+    Page.changePlatform = function() {
+        var platform = document.querySelector('input[name="platform"]:checked').value;
+        Page.setApi(platform);
+    }
 
     Page.rewardUsers = function() {
         console.log('rewardUsers');
@@ -147,7 +172,7 @@
 
             td.innerHTML = '~';
 
-            golos.broadcast.transferToVesting(wif, from, to, amt + ' GOLOS', function (sendError, sendResult)
+            Page.getApi().broadcast.transferToVesting(wif, from, to, amt + ' GOLOS', function (sendError, sendResult)
             {
                 console.log(sendError, sendResult);
 
@@ -170,7 +195,7 @@
             console.log('memo', memo);
             td.innerHTML = '~';
 
-            golos.broadcast.transfer(wif, from, to, amt + ' ' + kind, memo, function (sendError, sendResult)
+            Page.getApi().broadcast.transfer(wif, from, to, amt + ' ' + kind, memo, function (sendError, sendResult)
             {
                 console.log(sendError, sendResult);
 
@@ -249,7 +274,7 @@
     Page.getRebloggedtUsers = function (query) {
         console.log('getRebloggedtUsers');
         console.log(query);
-        return golos.api.getRebloggedBy(query.author, query.permlink, function(err, result) {
+        return Page.getApi().api.getRebloggedBy(query.author, query.permlink, function(err, result) {
             console.log(err, result);
             if (err) {
                 alert('error');
