@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Repost Reward</title>
     <script src="golos.min.js"></script>
-    <script src="//cdn.steemjs.com/lib/latest/steem.min.js"></script>
+    <script src="http://cdn.steemjs.com/lib/latest/steem.min.js"></script>
 </head>
 <body>
 <style type='text/css'>
@@ -12,7 +12,10 @@
         font-family: MicrosoftSansSerif;
     }
     #form #payer-amount {
-        width: 182px;
+        width: 82px;
+    }
+    #form #payer-amount-kind {
+        width: 212px;
     }
     #form .form-data {
         width: 300px;
@@ -49,10 +52,10 @@
     <div id="form">
         <table id="table-with-settings">
             <tr>
-                <td class="title">Платформа</td>
+                <td class="title">Блокчейн</td>
                 <td>
                     <input type="radio" onclick="Page.changePlatform();" name="platform" checked="checked" value="golos"> Golos
-                    <input type="radio" onclick="Page.changePlatform();" name="platform" value="steem"> Steemit
+                    <input type="radio" onclick="Page.changePlatform();" name="platform" value="steem"> Steem
                 </td>
             </tr>
             <tr>
@@ -71,10 +74,13 @@
                 <td class="title">Награда</td>
                 <td>
                     <input type="text" class="form-data" id="payer-amount" placeholder="0.1">
-                    <select  id="payer-amount-kind">
-                        <option value="GOLOSPOWER" selected="selected">СИЛА ГОЛОСА</option>
-                        <option value="GOLOS">ГОЛОС</option>
-                        <option value="GBG">ЗОЛОТОЙ</option>
+                    <select id="payer-amount-kind">
+                        <option value="GOLOSPOWER">СИЛА ГОЛОСА</option>
+                        <option value="GOLOS">GOLOS (ГОЛОС)</option>
+                        <option value="GBG">GBG (ЗОЛОТОЙ)</option>
+                        <option value="STEEMPOWER">STEEM POWER</option>
+                        <option value="STEEM">STEEM</option>
+                        <option value="SBD">SBD ($)</option>
                     </select>
                 </td>
             </tr>
@@ -104,12 +110,14 @@
 <script>
 
     function Page() {
-        var api = golos;
+        var api = null;
     }
 
     var Page = new Page();
 
     Page.setApi = function(platform) {
+        console.log('setApi');
+
         if (platform === 'golos') {
             api = golos;
         } else {
@@ -118,12 +126,49 @@
     }
 
     Page.getApi = function() {
+        console.log('getApi');
+
         return api;
     }
 
     Page.changePlatform = function() {
+        console.log('changePlatform');
+
         var platform = document.querySelector('input[name="platform"]:checked').value;
         Page.setApi(platform);
+
+        Page.displaySelectCurrency(platform);
+    }
+
+    Page.displaySelectCurrency = function(platform) {
+        console.log('displaySelectCurrency');
+
+        var e = document.getElementById("payer-amount-kind");
+        var selected = e.options[e.selectedIndex].value;
+
+        if (platform === 'golos') {
+            document.querySelector('option[value="SBD"]').style.display = "none";
+            document.querySelector('option[value="STEEM"]').style.display = "none";
+            document.querySelector('option[value="STEEMPOWER"]').style.display = "none";
+            document.querySelector('option[value="GBG"]').style.display = "block";
+            document.querySelector('option[value="GOLOS"]').style.display = "block";
+            document.querySelector('option[value="GOLOSPOWER"]').style.display = "block";
+
+            if (['SBD','STEEM','STEEMPOWER'].indexOf(selected)) {
+                document.querySelector('option[value="GOLOSPOWER"]').selected = "selected";
+            }
+        } else {
+            document.querySelector('option[value="SBD"]').style.display = "block";
+            document.querySelector('option[value="STEEM"]').style.display = "block";
+            document.querySelector('option[value="STEEMPOWER"]').style.display = "block";
+            document.querySelector('option[value="GBG"]').style.display = "none";
+            document.querySelector('option[value="GOLOS"]').style.display = "none";
+            document.querySelector('option[value="GOLOSPOWER"]').style.display = "none";
+
+            if (['GBG','GOLOS','GOLOSPOWER'].indexOf(selected)) {
+                document.querySelector('option[value="STEEMPOWER"]').selected = "selected";
+            }
+        }
     }
 
     Page.rewardUsers = function() {
@@ -162,9 +207,8 @@
 
 
 
-        console.log('amt.indexOf(\'GOLOSPOWER\')', amt.indexOf('GOLOSPOWER'));
         amt.trim()
-        if (kind === 'GOLOSPOWER') {
+        if (kind === 'GOLOSPOWER' || kind === 'STEEMPOWER') {
 
             console.log('from', from);
             console.log('to', to);
@@ -172,7 +216,9 @@
 
             td.innerHTML = '~';
 
-            Page.getApi().broadcast.transferToVesting(wif, from, to, amt + ' GOLOS', function (sendError, sendResult)
+            var currency = kind === 'STEEMPOWER' ? 'STEEM' : 'GOLOS';
+
+            Page.getApi().broadcast.transferToVesting(wif, from, to, amt + ' ' + currency, function (sendError, sendResult)
             {
                 console.log(sendError, sendResult);
 
@@ -182,7 +228,7 @@
                     td.innerHTML = 'ERROR';
                 }
                 else {
-                    td.innerHTML = 'powered up ' + amt;
+                    td.innerHTML = 'sent ' + amt + ' ' + kind;
                 }
             });
         } else {
@@ -205,7 +251,7 @@
                     td.innerHTML = 'ERROR';
                 }
                 else {
-                    td.innerHTML = 'sent ' + amt;
+                    td.innerHTML = 'sent ' + amt + ' ' + kind;
                 }
             });
         }
@@ -354,6 +400,8 @@
         }
         isAllSelected = false;
     }
+
+    Page.changePlatform();
 </script>
 </body>
 </html>
