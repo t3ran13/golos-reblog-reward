@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Reblog Reward</title>
     <script src="golos.min.js"></script>
-    <script src="http://cdn.steemjs.com/lib/latest/steem.min.js"></script>
+    <script src="https://cdn.steemjs.com/lib/latest/steem.min.js"></script>
 </head>
 <body>
 <style type='text/css'>
@@ -76,10 +76,10 @@
                 </td>
             </tr>
             <tr>
-                <td class="title">Награда</td>
+                <td class="title" valign="top">Награда</td>
                 <td>
-                    <input type="text" class="form-data" id="payer-amount" placeholder="0.1">
-                    <select id="payer-amount-kind">
+                    <input onkeyup="Page.changeMoneyDistribution();" type="text" class="form-data" id="payer-amount" placeholder="0.1">
+                    <select onchange="Page.changeMoneyDistribution();" id="payer-amount-kind">
                         <option value="GOLOSPOWER">СИЛА ГОЛОСА</option>
                         <option value="GOLOS">GOLOS (ГОЛОС)</option>
                         <option value="GBG">GBG (ЗОЛОТОЙ)</option>
@@ -87,6 +87,9 @@
                         <option value="STEEM">STEEM</option>
                         <option value="SBD">SBD ($)</option>
                     </select>
+                    <br>
+                    <input type="radio" onchange="Page.changeMoneyDistribution();" name="payer-money-distribution" checked="checked" value="each"> Каждому
+                    <input type="radio" onchange="Page.changeMoneyDistribution();" name="payer-money-distribution" value="all"> На всех
                 </td>
             </tr>
             <tr>
@@ -116,6 +119,7 @@
 
     function Page() {
         var api = null;
+        var rewardPerUser = null;
     }
 
     var Page = new Page();
@@ -143,6 +147,83 @@
         Page.setApi(platform);
 
         Page.displaySelectCurrency(platform);
+    }
+
+    Page.changeMoneyDistribution = function() {
+        console.log('changeMoneyDistribution');
+
+        Page.updateRewardPerUser();
+
+        Page.showRewardSum();
+    }
+
+    Page.updateRewardPerUser = function() {
+        console.log('updateRewardPerUser');
+
+        var dist = document.querySelector('input[name="payer-money-distribution"]:checked').value;
+        var amt = document.getElementById('payer-amount').value;
+        amt = Number(amt.trim()).toFixed(3);
+        var list = Page.getCheckedUsers();
+
+        if (dist === 'all') {
+            if (list.length > 0) {
+                rewardPerUser = (amt / list.length).toFixed(3) ;
+            } else {
+                rewardPerUser = (0).toFixed(3) ;
+            }
+        } else {
+            rewardPerUser = amt;
+        }
+    }
+
+    Page.showRewardSum = function() {
+        console.log('showRewardSum');
+
+        var el = document.getElementById('money-distribution-info');
+        console.log('el', el);
+        if (el != null) {
+            var amt = Page.getRewardPerUser();
+            var list = Page.getCheckedUsers();
+            var kind = document.getElementById('payer-amount-kind').value;
+            var html = 'Награда: каждому ' + rewardPerUser + ' ' + kind;
+            html += '<br>Всего ';
+
+            if (list.length > 0) {
+                console.log('1');
+                html += (amt * list.length).toFixed(3) ;
+            } else {
+                html += (0).toFixed(3) ;
+                console.log('2');
+            }
+            console.log('list', list);
+
+
+            html += ' ' + kind;
+
+            el.innerHTML = html;
+        }
+    }
+
+    Page.changeCheckedUsersSum = function() {
+        console.log('showCheckedUsersSum');
+
+        var q = 0;
+        var list = Page.getCheckedUsers();
+
+        document.getElementById('total-checked-users').innerHTML = list.length;
+    }
+
+    Page.getRewardPerUser = function() {
+        console.log('getRewardPerUser');
+
+        return rewardPerUser;
+    }
+
+    Page.changeUserCheckbox = function() {
+        console.log('changeUserCheckbox');
+
+        Page.changeCheckedUsersSum();
+        Page.changeMoneyDistribution();
     }
 
     Page.displaySelectCurrency = function(platform) {
@@ -204,8 +285,7 @@
         console.log('rewardUser');
         var from = Page.getPayer();
         var wif = document.getElementById('payer-active-key').value;
-        var amt = document.getElementById('payer-amount').value;
-        amt = Number(amt.trim()).toFixed(3);
+        var amt = Page.getRewardPerUser();
         var kind = document.getElementById('payer-amount-kind').value;
         var to = user;
         var td = document.getElementById('user-status-' + to);
@@ -365,6 +445,12 @@
 
         var html = '<table id="table-with-users">';
         html += '<tr>';
+        html += '<td colspan="4">';
+        html += '<span id="money-distribution-info">~</span>';
+        html += '</td>';
+        html += '</tr>';
+
+        html += '<tr>';
         html += '<td>';
         html += '<span class="checkbox-set-all" onclick="Page.pressAll();">Все</span>'
         html += '</td>';
@@ -373,13 +459,13 @@
         html += '<td>';
         html += '</td>';
         html += '<td>';
-        html += 'Всего: ' + list.length;
+        html += 'Всего: <span id="total-checked-users">~</span>';
         html += '</td>';
         html += '</tr>';
         list.forEach(function(user) {
             html += '<tr>';
             html += '<td>';
-            html += '<input type="checkbox" checked="checked" class="rewarded-user" id="' + user + '">';
+            html += '<input type="checkbox" checked="checked" class="rewarded-user" onchange="Page.changeUserCheckbox();" id="' + user + '">';
             html += '</td>';
             html += '<td>';
             html += user;
@@ -400,11 +486,14 @@
         html += '</table>';
 
         document.getElementById('users-list').innerHTML = html;
+
+        Page.changeUserCheckbox();
     }
 
 
 
     Page.pressAll = function() {
+        console.log('pressAll');
 
         var list = document.getElementsByClassName("rewarded-user");
         var isAllSelected = false;
@@ -423,6 +512,27 @@
             });
         }
         isAllSelected = false;
+
+
+        Page.changeUserCheckbox();
+    }
+
+
+
+    Page.getCheckedUsers = function() {
+        console.log('getCheckedUsers');
+        var listChecked = [];
+
+        var list = document.getElementsByClassName("rewarded-user");
+        if (list != null && list.length > 0) {
+            Array.from(list).forEach(function(checkbox) {
+                if (checkbox.checked === true) {
+                    listChecked.push(checkbox);
+                }
+            });
+        }
+
+        return listChecked;
     }
 
     Page.changePlatform();
