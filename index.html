@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Repost Reward</title>
+    <title>Reblog Reward</title>
     <script src="golos.min.js"></script>
     <script src="http://cdn.steemjs.com/lib/latest/steem.min.js"></script>
 </head>
@@ -51,6 +51,9 @@
 <div id="page">
     <div id="form">
         <table id="table-with-settings">
+            <caption>
+                <h2>Reblog Reward</h2>
+            </caption>
             <tr>
                 <td class="title">Блокчейн</td>
                 <td>
@@ -62,6 +65,8 @@
                 <td class="title">Ник плательщика@</td>
                 <td>
                     <input type="text" class="form-data" id="payer-user">
+                    <input type="submit" class="submit-data" value="Показать баланс" onclick="Page.showPayerBalance();">
+                    <span id="payer-balance"></span>
                 </td>
             </tr>
             <tr>
@@ -255,6 +260,25 @@
                 }
             });
         }
+    }
+
+    Page.showPayerBalance = function() {
+        console.log('showPayerBalance');
+
+        var user = document.getElementById('payer-user').value;
+        var field = document.getElementById('payer-balance');
+        field.innerHTML = '~';
+
+        Page.getApi().api.getAccounts([user], function(err, result) {
+            console.log('showPayerBalance',user);
+            console.log(err, result);
+            if (err) {
+                alert('error');
+                return [];
+            }
+
+            field.innerHTML = result[0].balance + ' and ' + result[0].sbd_balance;
+        });
     }
 
     Page.showListRepostedUsers = function() {
