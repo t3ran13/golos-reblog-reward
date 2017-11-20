@@ -535,7 +535,10 @@
         return listChecked;
     }
 
-    Page.changePlatform();
+
+    window.onload = function () {
+        Page.changePlatform();
+    }
 </script>
 </body>
 </html>
