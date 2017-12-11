@@ -55,32 +55,32 @@
                 <h2>Reblog Reward</h2>
             </caption>
             <tr>
-                <td class="title">Блокчейн</td>
+                <td class="title">Блокчейн/ Blockchain</td>
                 <td>
                     <input type="radio" onclick="Page.changePlatform();" name="platform" checked="checked" value="golos"> Golos
                     <input type="radio" onclick="Page.changePlatform();" name="platform" value="steem"> Steem
                 </td>
             </tr>
             <tr>
-                <td class="title">Ник плательщика@</td>
+                <td class="title">Ник плательщика / Payer user @</td>
                 <td>
                     <input type="text" class="form-data" id="payer-user">
-                    <input type="submit" class="submit-data" value="Показать баланс" onclick="Page.showPayerBalance();">
+                    <input type="submit" class="submit-data" value="Показать баланс/ Balance" onclick="Page.showPayerBalance();">
                     <span id="payer-balance"></span>
                 </td>
             </tr>
             <tr>
-                <td class="title">Активный ключ плательщика</td>
+                <td class="title">Активный ключ плательщика/ Payer active key</td>
                 <td>
                     <input type="text" class="form-data" id="payer-active-key" style="width: 30px;">
                 </td>
             </tr>
             <tr>
-                <td class="title" valign="top">Награда</td>
+                <td class="title" valign="top">Награда/ Reward</td>
                 <td>
                     <input onkeyup="Page.changeMoneyDistribution();" type="text" class="form-data" id="payer-amount" placeholder="0.1">
                     <select onchange="Page.changeMoneyDistribution();" id="payer-amount-kind">
-                        <option value="GOLOSPOWER">СИЛА ГОЛОСА</option>
+                        <option value="GOLOSPOWER">СИЛА ГОЛОСА (GP)</option>
                         <option value="GOLOS">GOLOS (ГОЛОС)</option>
                         <option value="GBG">GBG (ЗОЛОТОЙ)</option>
                         <option value="STEEMPOWER">STEEM POWER</option>
@@ -88,18 +88,18 @@
                         <option value="SBD">SBD ($)</option>
                     </select>
                     <br>
-                    <input type="radio" onchange="Page.changeMoneyDistribution();" name="payer-money-distribution" checked="checked" value="each"> Каждому
-                    <input type="radio" onchange="Page.changeMoneyDistribution();" name="payer-money-distribution" value="all"> На всех
+                    <input type="radio" onchange="Page.changeMoneyDistribution();" name="payer-money-distribution" checked="checked" value="each"> Каждому/ Each
+                    <input type="radio" onchange="Page.changeMoneyDistribution();" name="payer-money-distribution" value="all"> На всех/ Tatal
                 </td>
             </tr>
             <tr>
-                <td class="title">Сообщение к переводу</td>
+                <td class="title">Сообщение к переводу/ Transfer message</td>
                 <td>
                     <input type="text" class="form-data" id="payer-memo" value="За репост {post_link}">
                 </td>
             </tr>
             <tr>
-                <td class="title">Ссылка на статью</td>
+                <td class="title">Ссылка на статью/ Link to post</td>
                 <td>
                     <input type="text" class="form-data" id="post-url">
                 </td>
@@ -107,7 +107,7 @@
             <tr>
                 <td></td>
                 <td>
-                    <input type="submit" class="submit-data" value="Показать поделившихся пользователей" onclick="Page.showListRepostedUsers();">
+                    <input type="submit" class="submit-data" value="Показать поделившихся пользователей/ Show users" onclick="Page.showListRepostedUsers();">
                 </td>
             </tr>
         </table>
@@ -179,28 +179,22 @@
     Page.showRewardSum = function() {
         console.log('showRewardSum');
 
-        var el = document.getElementById('money-distribution-info');
-        console.log('el', el);
+        var el = document.getElementById('money-distribution-info-1');
+        var el2 = document.getElementById('money-distribution-info-2');
         if (el != null) {
             var amt = Page.getRewardPerUser();
             var list = Page.getCheckedUsers();
             var kind = document.getElementById('payer-amount-kind').value;
-            var html = 'Награда: каждому ' + rewardPerUser + ' ' + kind;
-            html += '<br>Всего ';
+            el.innerHTML = rewardPerUser + ' ' + kind;
+            html = '';
 
             if (list.length > 0) {
-                console.log('1');
                 html += (amt * list.length).toFixed(3) ;
             } else {
                 html += (0).toFixed(3) ;
-                console.log('2');
             }
-            console.log('list', list);
 
-
-            html += ' ' + kind;
-
-            el.innerHTML = html;
+            el2.innerHTML = html + ' ' + kind;
         }
     }
 
@@ -265,7 +259,7 @@
             || document.getElementById('payer-active-key').value === ''
             || document.getElementById('payer-amount').value === ''
         ) {
-            alert('Заполните все поля');
+            alert('Заполните все поля/ Fill all fields');
             return;
         }
 
@@ -445,21 +439,36 @@
 
         var html = '<table id="table-with-users">';
         html += '<tr>';
-        html += '<td colspan="4">';
-        html += '<span id="money-distribution-info">~</span>';
+        html += '<td colspan="2">';
+        html += 'Каждому пользователю/ Each user:';
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '<td>';
+        html += '<span id="money-distribution-info-1">~</span>';
+        html += '</td>';
+        html += '</tr>';
+        html += '<tr>';
+        html += '<td colspan="2">';
+        html += 'Всего/ Total:';
+        html += '</td>';
+        html += '<td>';
+        html += '</td>';
+        html += '<td>';
+        html += '<span id="money-distribution-info-2">~</span>';
         html += '</td>';
         html += '</tr>';
 
         html += '<tr>';
         html += '<td>';
-        html += '<span class="checkbox-set-all" onclick="Page.pressAll();">Все</span>'
+        html += '<span class="checkbox-set-all" onclick="Page.pressAll();">Все<br>/All</span>'
         html += '</td>';
         html += '<td>';
         html += '</td>';
         html += '<td>';
         html += '</td>';
         html += '<td>';
-        html += 'Всего: <span id="total-checked-users">~</span>';
+        html += 'Всего/ Total: <span id="total-checked-users">~</span>';
         html += '</td>';
         html += '</tr>';
         list.forEach(function(user) {
@@ -474,13 +483,13 @@
             html += '0';
             html += '</td>';
             html += '<td>';
-            html += '<input type="submit" class="submit-data" value="Вознаградить" onclick="Page.rewardUser(\'' + user + '\');">';
+            html += '<input type="submit" class="submit-data" value="Вознаградить/ Reward" onclick="Page.rewardUser(\'' + user + '\');">';
             html += '</td>';
             html += '</tr>';
         });
         html += '<tr>';
         html += '<td colspan="4">';
-        html += '<input type="submit" class="submit-data" value="Повелеваю вознаградить выбранных!" onclick="Page.rewardUsers();">';
+        html += '<input type="submit" class="submit-data" value="Вознаградить выбранных/ Reward checked" onclick="Page.rewardUsers();">';
         html += '</td>';
         html += '</tr>';
         html += '</table>';
